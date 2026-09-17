@@ -29,7 +29,7 @@ public class Bola : MonoBehaviour
 
     void BolaPontuou(int index)
     {
-        Debug.Log($"PLAYER {index} PONTUOU!!!");
+        //Debug.Log($"PLAYER {index} PONTUOU!!!");
 
         rb.position = new Vector2(0, 0);
         rb.linearVelocityX = 0;

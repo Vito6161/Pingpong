@@ -4,11 +4,16 @@ using System.Collections;
 
 public class GameManager : MonoBehaviour
 {
-    public int pontosP1, pontosP2;
+    public int pontosP1 = 0, pontosP2 = 0;
 
     void OnEnable()
     {
         PontuarOM.OnPonto += Pontuou;
+    }
+
+    void OnDisable()
+    {
+        PontuarOM.OnPonto -= Pontuou;
     }
 
 
@@ -28,6 +33,6 @@ public class GameManager : MonoBehaviour
                 break;
         }
 
-        Debug.Log($"Player 1: {pontosP1} ||| Player 2: {pontosP2}");
+        //Debug.Log($"Player 1: {pontosP1} ||| Player 2: {pontosP2}");
     }
 }
