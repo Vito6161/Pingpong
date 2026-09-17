@@ -15,10 +15,12 @@ public class Movement : MonoBehaviour
         if(Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow))
         {
             rb.MovePosition(rb.position + Vector2.up * speed * Time.fixedDeltaTime);
+
         }
         else if(Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow))
         {
             rb.MovePosition(rb.position + Vector2.down * speed * Time.fixedDeltaTime);
+
         }
     }
 }
