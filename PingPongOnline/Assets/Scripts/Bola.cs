@@ -12,8 +12,6 @@ public class Bola : MonoBehaviour
     void Start()
     {
         rb = gameObject.GetComponent<Rigidbody2D>();
-
-        StartCoroutine(StartGame());
     }
 
     void OnEnable()

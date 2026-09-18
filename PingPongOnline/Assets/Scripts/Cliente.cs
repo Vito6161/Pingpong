@@ -20,13 +20,14 @@ public class UdpClientTwoClients : MonoBehaviour
     public GameObject localCube;
 
     public GameObject remoteCube;
+    public bool isHost;
 
     void Start()
     {
         client = new UdpClient();
 
         serverEP = new IPEndPoint(
-            IPAddress.Parse("127.0.0.1"),
+            IPAddress.Parse(GameManager.instance.ip),
             5001
         );
 
@@ -42,6 +43,19 @@ public class UdpClientTwoClients : MonoBehaviour
         );
 
         remotePos = new Vector3(localCube.transform.position.x * -1, localCube.transform.position.y, localCube.transform.position.z);
+
+        isHost = GameManager.instance.isHost;
+        
+        if(isHost)
+        {
+            localCube = GameObject.Find("Player1");
+            remoteCube = GameObject.Find("Player2");
+        }
+        else
+        {
+            localCube = GameObject.Find("Player2");
+            remoteCube = GameObject.Find("Player1");
+        }
     }
 
     void Update()

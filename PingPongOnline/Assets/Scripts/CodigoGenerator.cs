@@ -8,6 +8,20 @@ public class GetLocalIP : MonoBehaviour
     public string ipDoPC;
    // public string ipConvertido;
 
+   public static GetLocalIP instance;
+
+   void Awake()
+    {
+        if(instance == null)
+        {
+            instance = this;
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
+
     Dictionary<char, int> letras = new Dictionary<char, int>()
     {
         { 'a', 1 },
@@ -76,7 +90,7 @@ public class GetLocalIP : MonoBehaviour
         ipDoPC = GetLocalIPAddress();
     }
 
-    string GetLocalIPAddress()
+    public string GetLocalIPAddress()
     {
         string hostName = Dns.GetHostName();
         IPAddress[] addresses = Dns.GetHostEntry(hostName).AddressList;
@@ -92,9 +106,9 @@ public class GetLocalIP : MonoBehaviour
         return "IP não encontrado";
     }
 
-    string GenerateCode()
+    public string GenerateCode(string ipToCode)
     {
-        string[] splitIp = ipDoPC.Split(".");
+        string[] splitIp = ipToCode.Split(".");
         string[] ipConverted = new string[4];
         string pontos = "";
 
@@ -127,7 +141,7 @@ public class GetLocalIP : MonoBehaviour
         
     }
 
-    string BreakCode(string ipCode)
+    public string BreakCode(string ipCode)
     {
         string ipQuebrado = "";
         string ipConvertido = ipCode.Substring(4);
@@ -162,10 +176,6 @@ public class GetLocalIP : MonoBehaviour
 
             ipQuebrado = ipQuebrado.Insert(posicao, ".");
         }
-
-
-
-        
 
         return ipQuebrado;
     }
