@@ -7,6 +7,8 @@ using System.Globalization;
 
 public class UdpClientTwoClients : MonoBehaviour
 {
+
+    private string ip = " ";
     UdpClient client;
 
     Thread receiveThread;
@@ -15,55 +17,100 @@ public class UdpClientTwoClients : MonoBehaviour
 
     int myId = -1;
 
-    Vector3 remotePos = Vector3.zero;
+    // =========================
+    // OBJETOS
+    // =========================
 
     public GameObject localCube;
-
     public GameObject remoteCube;
+
+    public GameObject ball;
+
     public bool isHost;
+
+    // =========================
+    // POSIÇÕES RECEBIDAS
+    // =========================
+
+    Vector3 remotePos = Vector3.zero;
+    Vector3 remoteBallPos = Vector3.zero;
+
+    // =========================
+    // PLACAR
+    // =========================
+
+    public int scorePlayer1 = 0;
+    public int scorePlayer2 = 0;
 
     void Start()
     {
         client = new UdpClient();
 
         serverEP = new IPEndPoint(
-            IPAddress.Parse(GameManager.instance.ip),
+            IPAddress.Parse(
+                ip
+            ),
             5001
         );
 
         client.Connect(serverEP);
 
         receiveThread = new Thread(ReceiveData);
-
+        receiveThread.IsBackground = true;
         receiveThread.Start();
 
-        client.Send(
-            Encoding.UTF8.GetBytes("HELLO"),
-            5
-        );
+        // Identifica o cliente
+        SendMessageToServer("HELLO");
 
-        remotePos = new Vector3(localCube.transform.position.x * -1, localCube.transform.position.y, localCube.transform.position.z);
+        isHost =
+            GameManager.instance.isHost;
 
-        isHost = GameManager.instance.isHost;
-        
-        if(isHost)
+        // =========================
+        // REFERÊNCIAS DOS PLAYERS
+        // =========================
+
+        if (isHost)
         {
-            localCube = GameObject.Find("Player1");
-            remoteCube = GameObject.Find("Player2");
+            localCube =
+                GameObject.Find("Player1");
+
+            remoteCube =
+                GameObject.Find("Player2");
         }
         else
         {
-            localCube = GameObject.Find("Player2");
-            remoteCube = GameObject.Find("Player1");
+            localCube =
+                GameObject.Find("Player2");
+
+            remoteCube =
+                GameObject.Find("Player1");
         }
+
+        // =========================
+        // REFERÊNCIA DA BOLA
+        // =========================
+
+        ball =
+            GameObject.Find("Ball");
+
+        remotePos =
+            remoteCube.transform.position;
+
+        remoteBallPos =
+            ball.transform.position;
     }
 
     void Update()
     {
-        // Movimento local
-        float h = Input.GetAxis("Horizontal");
+        // =====================================
+        // MOVIMENTO DO PLAYER LOCAL
+        // =====================================
 
-        float v = Input.GetAxis("Vertical");
+        float h =
+            Input.GetAxis("Horizontal");
+
+        float v =
+            Input.GetAxis("Vertical");
 
         localCube.transform.Translate(
             new Vector3(h, v, 0) *
@@ -71,8 +118,11 @@ public class UdpClientTwoClients : MonoBehaviour
             5
         );
 
-        // Envia posição
-        string msg =
+        // =====================================
+        // ENVIA POSIÇÃO DO PLAYER
+        // =====================================
+
+        string playerMessage =
             "POS:" +
             localCube.transform.position.x.ToString(
                 "F2",
@@ -84,18 +134,52 @@ public class UdpClientTwoClients : MonoBehaviour
                 CultureInfo.InvariantCulture
             );
 
-        client.Send(
-            Encoding.UTF8.GetBytes(msg),
-            msg.Length
-        );
+        SendMessageToServer(playerMessage);
 
-        // Atualiza posição do outro jogador
-        remoteCube.transform.position = Vector3.Lerp(
-            remoteCube.transform.position,
-            remotePos,
-            Time.deltaTime * 10f
-        );
+        // =====================================
+        // ENVIA POSIÇÃO DA BOLA
+        // =====================================
+
+        string ballMessage =
+            "BALL:" +
+            ball.transform.position.x.ToString(
+                "F2",
+                CultureInfo.InvariantCulture
+            ) +
+            ";" +
+            ball.transform.position.y.ToString(
+                "F2",
+                CultureInfo.InvariantCulture
+            );
+
+        SendMessageToServer(ballMessage);
+
+        // =====================================
+        // ATUALIZA PLAYER REMOTO
+        // =====================================
+
+        remoteCube.transform.position =
+            Vector3.Lerp(
+                remoteCube.transform.position,
+                remotePos,
+                Time.deltaTime * 10f
+            );
+
+        // =====================================
+        // ATUALIZA BOLA
+        // =====================================
+
+        ball.transform.position =
+            Vector3.Lerp(
+                ball.transform.position,
+                remoteBallPos,
+                Time.deltaTime * 10f
+            );
     }
+
+    // =====================================
+    // RECEBIMENTO
+    // =====================================
 
     void ReceiveData()
     {
@@ -107,46 +191,98 @@ public class UdpClientTwoClients : MonoBehaviour
 
         while (true)
         {
-            byte[] data =
-                client.Receive(ref remoteEP);
-
-            string msg =
-                Encoding.UTF8.GetString(data);
-
-            if (msg.StartsWith("ASSIGN:"))
+            try
             {
-                myId =
-                    int.Parse(
-                        msg.Substring(7)
+                byte[] data =
+                    client.Receive(
+                        ref remoteEP
                     );
 
-                Debug.Log("[Cliente] Meu ID = " + myId);
-            }
-            else if (msg.StartsWith("POS:"))
-            {
-                string[] parts =
-                    msg.Substring(4).Split(';');
+                string msg =
+                    Encoding.UTF8.GetString(data);
 
-                if (parts.Length == 3)
+                // =================================
+                // ID
+                // =================================
+
+                if (msg.StartsWith("ASSIGN:"))
                 {
-                    int id =
-                        int.Parse(parts[0]);
+                    myId =
+                        int.Parse(
+                            msg.Substring(7)
+                        );
 
-                    if (id != myId)
+                    Debug.Log(
+                        "[Cliente] Meu ID = " +
+                        myId
+                    );
+                }
+
+                // =================================
+                // PLAYER
+                // =================================
+
+                else if (msg.StartsWith("POS:"))
+                {
+                    string[] parts =
+                        msg.Substring(4)
+                           .Split(';');
+
+                    if (parts.Length == 3)
+                    {
+                        int id =
+                            int.Parse(parts[0]);
+
+                        // Só atualiza o outro player
+                        if (id != myId)
+                        {
+                            float x =
+                                float.Parse(
+                                    parts[1],
+                                    CultureInfo.InvariantCulture
+                                );
+
+                            float y =
+                                float.Parse(
+                                    parts[2],
+                                    CultureInfo.InvariantCulture
+                                );
+
+                            remotePos =
+                                new Vector3(
+                                    x,
+                                    y,
+                                    0
+                                );
+                        }
+                    }
+                }
+
+                // =================================
+                // BOLA
+                // =================================
+
+                else if (msg.StartsWith("BALL:"))
+                {
+                    string[] parts =
+                        msg.Substring(5)
+                           .Split(';');
+
+                    if (parts.Length == 2)
                     {
                         float x =
                             float.Parse(
-                                parts[1],
+                                parts[0],
                                 CultureInfo.InvariantCulture
                             );
 
                         float y =
                             float.Parse(
-                                parts[2],
+                                parts[1],
                                 CultureInfo.InvariantCulture
                             );
 
-                        remotePos =
+                        remoteBallPos =
                             new Vector3(
                                 x,
                                 y,
@@ -154,14 +290,84 @@ public class UdpClientTwoClients : MonoBehaviour
                             );
                     }
                 }
+
+                // =================================
+                // SCORE
+                // =================================
+
+                else if (msg.StartsWith("SCORE:"))
+                {
+                    string[] parts =
+                        msg.Substring(6)
+                           .Split(';');
+
+                    if (parts.Length == 2)
+                    {
+                        scorePlayer1 =
+                            int.Parse(parts[0]);
+
+                        scorePlayer2 =
+                            int.Parse(parts[1]);
+
+                        Debug.Log(
+                            "Placar: " +
+                            scorePlayer1 +
+                            " x " +
+                            scorePlayer2
+                        );
+                    }
+                }
+            }
+            catch
+            {
+                // Socket fechado ou pacote inválido
             }
         }
     }
 
+    // =====================================
+    // ENVIA MENSAGEM
+    // =====================================
+
+    void SendMessageToServer(string message)
+    {
+        byte[] data =
+            Encoding.UTF8.GetBytes(message);
+
+        client.Send(
+            data,
+            data.Length
+        );
+    }
+
+    // =====================================
+    // ENVIA PLACAR
+    // =====================================
+
+    public void SendScore(
+        int player1Score,
+        int player2Score
+    )
+    {
+        string message =
+            "SCORE:" +
+            player1Score +
+            ";" +
+            player2Score;
+
+        SendMessageToServer(message);
+    }
+
+    // =====================================
+    // ENCERRAMENTO
+    // =====================================
+
     void OnApplicationQuit()
     {
-        receiveThread.Abort();
+        if (receiveThread != null)
+            receiveThread.Abort();
 
-        client.Close();
+        if (client != null)
+            client.Close();
     }
 }

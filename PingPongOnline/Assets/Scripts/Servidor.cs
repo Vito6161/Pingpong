@@ -4,15 +4,11 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Collections.Generic;
-using System.Globalization;
 
 public class UdpServerTwoClients : MonoBehaviour
 {
-
     UdpClient server;
-
     IPEndPoint anyEP;
-
     Thread receiveThread;
 
     Dictionary<string, int> clientIds =
@@ -30,7 +26,7 @@ public class UdpServerTwoClients : MonoBehaviour
         );
 
         receiveThread = new Thread(ReceiveData);
-
+        receiveThread.IsBackground = true;
         receiveThread.Start();
 
         Debug.Log("Servidor iniciado na porta 5001");
@@ -40,55 +36,131 @@ public class UdpServerTwoClients : MonoBehaviour
     {
         while (true)
         {
-            byte[] data = server.Receive(ref anyEP);
-
-            string msg = Encoding.UTF8.GetString(data);
-
-            string key =
-                anyEP.Address + ":" + anyEP.Port;
-
-            if (!clientIds.ContainsKey(key))
+            try
             {
-                clientIds[key] = nextId++;
+                byte[] data = server.Receive(ref anyEP);
 
-                string assignMsg =
-                    "ASSIGN:" + clientIds[key];
+                string msg =
+                    Encoding.UTF8.GetString(data);
 
-                server.Send(
-                    Encoding.UTF8.GetBytes(assignMsg),
-                    assignMsg.Length,
-                    anyEP
-                );
-            }
+                string key =
+                    anyEP.Address + ":" + anyEP.Port;
 
-            int id = clientIds[key];
-
-            if (msg.StartsWith("POS:"))
-            {
-                string coords = msg.Substring(4);
-
-                string broadcast =
-                    $"POS:{id};{coords}";
-
-                byte[] bdata =
-                    Encoding.UTF8.GetBytes(broadcast);
-
-                foreach (var kvp in clientIds)
+                // Novo cliente
+                if (!clientIds.ContainsKey(key))
                 {
-                    var parts = kvp.Key.Split(':');
+                    clientIds[key] = nextId++;
 
-                    IPEndPoint ep = new IPEndPoint(
-                        IPAddress.Parse(parts[0]),
-                        int.Parse(parts[1])
-                    );
+                    string assignMsg =
+                        "ASSIGN:" + clientIds[key];
+
+                    byte[] assignData =
+                        Encoding.UTF8.GetBytes(assignMsg);
 
                     server.Send(
-                        bdata,
-                        bdata.Length,
-                        ep
+                        assignData,
+                        assignData.Length,
+                        anyEP
+                    );
+
+                    Debug.Log(
+                        "Novo cliente: " +
+                        key +
+                        " ID: " +
+                        clientIds[key]
                     );
                 }
+
+                int id = clientIds[key];
+
+                // =========================
+                // POSIÇÃO DOS PLAYERS
+                // =========================
+
+                if (msg.StartsWith("POS:"))
+                {
+                    string coords =
+                        msg.Substring(4);
+
+                    string broadcast =
+                        "POS:" +
+                        id +
+                        ";" +
+                        coords;
+
+                    Broadcast(broadcast);
+                }
+
+                // =========================
+                // POSIÇÃO DA BOLA
+                // =========================
+
+                else if (msg.StartsWith("BALL:"))
+                {
+                    string coords =
+                        msg.Substring(5);
+
+                    string broadcast =
+                        "BALL:" +
+                        coords;
+
+                    Broadcast(broadcast);
+                }
+
+                // =========================
+                // PONTUAÇÃO
+                // =========================
+
+                else if (msg.StartsWith("SCORE:"))
+                {
+                    string score =
+                        msg.Substring(6);
+
+                    string broadcast =
+                        "SCORE:" +
+                        score;
+
+                    Broadcast(broadcast);
+                }
+            }
+            catch
+            {
+                // Evita que a thread morra caso
+                // o socket seja fechado.
             }
         }
+    }
+
+    void Broadcast(string message)
+    {
+        byte[] data =
+            Encoding.UTF8.GetBytes(message);
+
+        foreach (var kvp in clientIds)
+        {
+            string[] parts =
+                kvp.Key.Split(':');
+
+            IPEndPoint ep =
+                new IPEndPoint(
+                    IPAddress.Parse(parts[0]),
+                    int.Parse(parts[1])
+                );
+
+            server.Send(
+                data,
+                data.Length,
+                ep
+            );
+        }
+    }
+
+    void OnApplicationQuit()
+    {
+        if (receiveThread != null)
+            receiveThread.Abort();
+
+        if (server != null)
+            server.Close();
     }
 }

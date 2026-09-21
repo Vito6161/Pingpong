@@ -452,7 +452,7 @@ Transform:
   m_GameObject: {fileID: 295081372}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 15.46, y: 0, z: 0}
+  m_LocalPosition: {x: -15.46, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 2.6577065, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1688,7 +1688,7 @@ Transform:
   m_GameObject: {fileID: 2026002952}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -15.46, y: 0, z: 0}
+  m_LocalPosition: {x: 15.46, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 2.6577065, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1708,7 +1708,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UdpClientTwoClients
   localCube: {fileID: 2026002952}
   remoteCube: {fileID: 295081372}
-  ball: {fileID: 29607502}
+  ball: {fileID: 0}
   isHost: 0
   scorePlayer1: 0
   scorePlayer2: 0
